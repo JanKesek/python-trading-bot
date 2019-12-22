@@ -48,14 +48,26 @@ def buyToSellRatio(currArr):
 		print(curr[1])
 		print(str(curr[1]))
 		print(requests.get("https://coinmarketcap.com/currencies/" + curr[0].lower() + "/historical-data/?start=" + ("").join(str(curr[1])[0:10].split("-"))))
-#listOfCurrencies=pickler.Pickler("midMarketCapCurrPickle", None).retrieve()
+def removeDupplicated(arr):
+    arr2={}
+    for i in arr:
+        if i[0] not in arr2: arr2[i[0]]=i[1]
+    return arr2
+    
+listOfCurrencies=pickler.Pickler("midMarketCapCurrPickle", None).retrieve()
+listOfCurrencies.append('ONE')
 #for w in requests.get("https://api.coingecko.com/api/v3/coins/list").json():
 #	listOfCurrencies.append(w['symbol'])
-#print(circulatingToTotalRatio(midMarketCapCurr))
+#print(circulatingToTotalRatio(listOfCurrencies))
 #print(listOfCurrencies)
 #c24hObj=circulatingTo24HVolRatio(listOfCurrencies)
-#print(c24hObj)
+c24hObj= [['EOS', 'bla1'],['EOS', 'bla2'],['LINK', 'ala1'],['LINK', 'ala2'],['BTC','ccc1'],['ETH', 'ccc2']]
+print(c24hObj)
+print(removeDupplicated(c24hObj))
 #pickler.Pickler("circToVol", c24hObj).save()
 obj=pickler.Pickler("circToVolShorter")
-#d=findDayData(obj.retrieve())
-#print(d)
+arr=obj.retrieve()
+arr.append(['ONE', datetime(2019, 9, 18, 20, 53, 12, 529759)])
+print(arr)
+d=buyToSellRatio(obj.retrieve())
+print(d)

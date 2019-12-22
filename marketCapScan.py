@@ -22,10 +22,6 @@ for names in exchangesName:
 exchange=ccxt.binance()
 exchange.load_markets()
 currencies = exchange.fetch_currencies().keys()
-#print(currencies)
-#print(findMidMarketCap(list(currencies)))
-#print("LOADING MARKETS\n\n\n\n\n\n")
-
 midMarketCapCurr=[]
 for n in exchangeObjects:
 	midMarketCapCurr.extend(findMidMarketCap(list(n)))
