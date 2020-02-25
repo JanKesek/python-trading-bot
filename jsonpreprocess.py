@@ -1,4 +1,6 @@
 import pandas as pd
+import json
+import csv
 import requests
 from datetime import datetime
 from datetime import timedelta
@@ -13,12 +15,26 @@ def toSupervised(data, lag=1):
 	return data.set_axis(["Volume", "Today","Lag1", "Lag2","Lag3","Lag4","Lag5","Direction1",
 				  "VolumeT","Tomorrow","Lag12", "Lag22","Lag32","Lag42","Lag52","Direction2"],axis=1, inplace=False)
 
-def convertJSONToDataFrame(jsonobj,startD=datetime(2019,1,1), endD=datetime(2019,12,22)):
-	ts=pd.DataFrame(index=pd.date_range(startD,endD))
-	prices=[float(d["close"]) for d in jsonobj]
-	ts["Today"]=prices
-	ts["Volume"]=[float(d["volume"]) for d in jsonobj]
-	for i in range(0,5): ts["Lag{}".format(i+1)]=ts["Today"].shift(i+1)
+def checkDatetimeConsistency(jsonobj, index):
+	dates=[d['open_time'] for d in jsonobj]
+	print(index)
+	for i in range(len(index)): 
+		if index[i] not in dates: 
+			#index=index.delete(datetime.strprime(d,'%Y-%m-%d %I:%M:%S'))
+			index=index.delete(i)
+	return index
+def convertJSONToDataFrame(jsonobj,startD=datetime(2019,1,1), endD=datetime(2019,12,22), otherVariables=[]):
+	#ts=pd.DataFrame(index=pd.date_range(startD,endD))
+	index=pd.date_range(startD,endD, freq='1T')
+	ts=pd.DataFrame(index=index)
+	prices=[float(d['close']) for d in jsonobj]
+	#index=checkDatetimeConsistency(jsonobj, index)
+	#print("Object length: ", len(jsonobj),"Index: ", len(index), " Length: ", len(prices))
+	ts["close"]=prices
+	for v in otherVariables: ts[v]=[float(d[v]) for d in jsonobj]
+	#ts["DailyLow"]=[float(d["low"]) for d in jsonobj]
+	#ts["DailyHigh"]=[float(d["high"]) for d in jsonobj]
+	for i in range(0,5): ts["Lag{}".format(i+1)]=ts["close"].shift(i+1)
 	return ts
 def getJSONObjectCP(symbol,startDate="2019-01-01",endDate="2020-01-09"):
 	r=requests.get("https://api.coinpaprika.com/v1/coins/"+symbol+"/ohlcv/historical?start="+startDate+"&end="+endDate)
@@ -50,3 +66,52 @@ def scale(train, test):
 	test = test.values.reshape(test.shape[0], test.shape[1])
 	test_scaled = scaler.transform(test)
 	return scaler, train_scaled, test_scaled
+def csvToJson(csvFName):
+	jsonLst=[]
+	i=0
+	with open(csvFName, 'r') as csvF:
+		csvR=csv.reader(csvF)
+		for rows in csvR:
+			if i!=0:
+				print(rows)
+				rowDict = {
+					'open_time': str(pd.to_datetime(rows[0], unit='ms')),
+				 	'open' : float(rows[1]),
+				 	'high' : float(rows[2]),
+					'low'  : float(rows[3]),
+					'close' : float(rows[4]),
+					'volume' : float(rows[5]),
+				 'close_time' : str(pd.to_datetime(rows[6], unit='ms')),
+				 'quote_asset_volume' : rows[7],
+				 'number_of_trades' : rows[8],
+				 'taker_buy_base_asset_volume': rows[9],
+				 'taker_buy_quote_asset_volume': rows[10],
+				 'ignore': rows[11]
+				}
+				print(rowDict)
+				jsonLst.append(rowDict)
+			i+=1
+			#if i>=200: break
+	with open('LINK-BTC.json', 'w') as outfile:
+		json.dump(jsonLst, outfile)
+	return jsonLst
+def debloatJSON(jsonFileName, importantVars):
+	debloatedJSON=[]
+	with open(jsonFileName) as json_file:
+		data = json.load(json_file)
+		i=0
+		l=len(data)
+		for p in data:
+			print(i, " - ", l)
+			i+=1
+			jsonDict={}
+			for var in importantVars: jsonDict[var]=p[var]
+			debloatedJSON.append(jsonDict)
+	with open('LINK-BTCSmallVersion.json', 'w') as outfile:
+		json.dump(debloatedJSON, outfile)
+def readJSON(jsonFileName):
+	jsonObj=[]
+	with open(jsonFileName) as json_file:
+		data = json.load(json_file)
+		for p in data: jsonObj.append(p)
+	return jsonObj
