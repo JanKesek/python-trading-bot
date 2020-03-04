@@ -7,6 +7,8 @@ from datetime import timedelta
 from pandas import concat
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+import ccxt
+import pprint
 def toSupervised(data, lag=1):
 	columns = [data.shift(i) for i in range(1, lag+1)]
 	columns.append(data)
@@ -115,3 +117,27 @@ def readJSON(jsonFileName):
 		data = json.load(json_file)
 		for p in data: jsonObj.append(p)
 	return jsonObj
+def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
+	binance=ccxt.binance()
+	currentTime=(datetime.now()-timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+	since=jsonObj[-1]['open_time']
+	while since[:-3]!=currentTime[:-3]:
+		since=since.replace(" ", "T")
+		candles = binance.fetch_ohlcv(symbol=symbol, timeframe=timeframe, since=binance.parse8601(since),limit=1000)
+		for c in candles:
+			openTime=binance.iso8601(c[0])[:-5]
+			#https://github.com/ccxt/ccxt/wiki/Manual look: OHLCV structure for return parameters
+			openTime=openTime.replace("T", " ")
+			newPrice={'open_time': openTime, 'close': c[4] }
+			jsonObj.append(newPrice)
+		since=jsonObj[-1]['open_time']
+		print(currentTime[:-3], " : ", since[:-3])
+	with open(filename, 'w') as outfile:
+		json.dump(jsonObj, outfile)
+	return
+
+
+if __name__ == "__main__":
+	filename="LINK-BTCShort.json"
+	jsonObj=readJSON(filename)
+	actualizeJSON(jsonObj, filename)
