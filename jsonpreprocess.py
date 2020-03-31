@@ -109,7 +109,7 @@ def debloatJSON(jsonFileName, importantVars):
 			jsonDict={}
 			for var in importantVars: jsonDict[var]=p[var]
 			debloatedJSON.append(jsonDict)
-	with open('LINK-BTCSmallVersion.json', 'w') as outfile:
+	with open('LINK-BTCShort.json', 'w') as outfile:
 		json.dump(debloatedJSON, outfile)
 def readJSON(jsonFileName):
 	jsonObj=[]
@@ -121,6 +121,7 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 	binance=ccxt.binance()
 	currentTime=(datetime.now()-timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 	since=jsonObj[-1]['open_time']
+	previousTime=since
 	while since[:-3]!=currentTime[:-3]:
 		since=since.replace(" ", "T")
 		candles = binance.fetch_ohlcv(symbol=symbol, timeframe=timeframe, since=binance.parse8601(since),limit=1000)
@@ -132,6 +133,8 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 			jsonObj.append(newPrice)
 		since=jsonObj[-1]['open_time']
 		print(currentTime[:-3], " : ", since[:-3])
+		if previousTime==since: break
+		else: previousTime=since
 	with open(filename, 'w') as outfile:
 		json.dump(jsonObj, outfile)
 	return
@@ -140,4 +143,4 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 if __name__ == "__main__":
 	filename="LINK-BTCShort.json"
 	jsonObj=readJSON(filename)
-	actualizeJSON(jsonObj, filename)
+	actualizeJSON(jsonObj,filename)
