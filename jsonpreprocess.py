@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import ccxt
 import pprint
+from backtester import Backtester
 def toSupervised(data, lag=1):
 	columns = [data.shift(i) for i in range(1, lag+1)]
 	columns.append(data)
@@ -127,9 +128,11 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 		candles = binance.fetch_ohlcv(symbol=symbol, timeframe=timeframe, since=binance.parse8601(since),limit=1000)
 		for c in candles:
 			openTime=binance.iso8601(c[0])[:-5]
-			#https://github.com/ccxt/ccxt/wiki/Manual look: OHLCV structure for return parameters
+			#https://github.com/ccxt/ccxt/wiki/Manual look chapter: OHLCV Structure for return parameters
 			openTime=openTime.replace("T", " ")
-			newPrice={'open_time': openTime, 'close': c[4] }
+			#i need VOL,H,L for rule-based systems lets leave it for now. Short version only have close
+			newPrice={'open_time': openTime, 'high': c[2], 'low': c[3],'close': c[4], 'volume': c[5] }
+			#print(open_time)
 			jsonObj.append(newPrice)
 		since=jsonObj[-1]['open_time']
 		print(currentTime[:-3], " : ", since[:-3])
@@ -141,6 +144,29 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 
 
 if __name__ == "__main__":
-	filename="LINK-BTCShort.json"
+	from rulebasedsystem import RBS
+	#filename="LINK-BTCShort.json"
+	filename="BTC-USD.json"
 	jsonObj=readJSON(filename)
-	actualizeJSON(jsonObj,filename)
+	pricesBacktest=[obj['close'] for obj in jsonObj]
+	#print(load_from_file())
+	rbs=RBS()
+	#rbs.calculate_rv(jsonObj)
+	#rbs.calculate_volatilty()
+	#rbs.calculate_wbb()
+	#rbs.save_rbs_obj_to_json()
+
+	#rbs.calculate_wbb()
+	rbs.load_from_file()
+	rbs.start()
+	rbs.find_in_groups("Plus_ETA_Big")
+	rbs.find_in_groups("Minus_ETA_Big")
+	rbs.find_in_groups("Plus_C_Big")
+	rbs.find_in_groups("Minus_C_Big")
+	signals=rbs.finaldecisions
+	tester=Backtester(500, pricesBacktest)
+	for s in signals:
+		tester.simpleBacktest(s[0],s[1])
+	print("WALLET: {} BALANCE: {} WEALTH {}".format(tester.wallet,tester.balance, tester.getWealth()))
+	#rbs.calculate_wbb()
+	#actualizeJSON(jsonObj,filename,symbol="BTC/USDT", timeframe='1h')

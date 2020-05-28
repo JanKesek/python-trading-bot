@@ -1,9 +1,16 @@
 class Backtester:
-    def __init__(self, initialUSD):
+    def __init__(self, initialUSD,pricesData):
+        self.prices=pricesData
         self.balance=initialUSD
         self.wallet=0
         self.buyMeanReverseFlag=0
         self.sellMeanReverseFlag=0
+    def simpleBacktest(self,signal, index):
+        if signal=='buy':
+            self.buy(self.prices[index])
+        else:
+            self.sell(self.prices[index])
+
     def buyMA(self,currentPrice):
         if self.balance<=0: print("BALANCE NOT ENOUGH")
         else:
@@ -33,14 +40,19 @@ class Backtester:
             self.sellMeanReverseFlag=0
             self.sell(currentPrice)
     def buy(self,currentPrice):
-        self.wallet=self.balance/currentPrice
-        self.balance=0
-        print("BUY SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+        if self.balance!=0:
+            self.wallet=self.balance/currentPrice
+            self.balance=0
+            print("BUY SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
     def sell(self,currentPrice):
-        self.balance=self.wallet*currentPrice
-        self.wallet=0
-        print("SELL SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+        if self.wallet!=0:
+            self.balance=self.wallet*currentPrice
+            self.wallet=0
+            print("SELL SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
     def getBalance(self):
         return self.balance
     def getFlag(self): 
         return self.meanReverseFlag
+    def getWealth(self):
+        if self.balance!=0: return self.balance
+        else: return self.wallet*self.prices[-1]

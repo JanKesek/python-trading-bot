@@ -1,0 +1,3 @@
+[submodule "Rule-based-trading-system"]
+	path = Rule-based-trading-system
+	url = https://github.com/JanKesek/Rule-based-trading-system.git
