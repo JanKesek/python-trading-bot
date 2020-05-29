@@ -17,14 +17,14 @@ class Backtester:
             self.buy(currentPrice)
             self.wallet=self.balance/currentPrice
             self.balance=0
-            print("BUY SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+            #print("BUY SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
     def sellMA(self,currentPrice):
         if self.wallet<=0: print("NO ASSET AVAILABLE")
         else:
             self.sell(currentPrice)
             self.balance=self.wallet*currentPrice
             self.wallet=0
-            print("SELL SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+            #print("SELL SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
     def buyMeanReverse(self,currentPrice):
         if self.balance<=0:
             print("CANNOT BUY ASSET, NO MONEY LEFT")
@@ -41,14 +41,24 @@ class Backtester:
             self.sell(currentPrice)
     def buy(self,currentPrice):
         if self.balance!=0:
-            self.wallet=self.balance/currentPrice
-            self.balance=0
-            print("BUY SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+            #has_money=self.commission_fee(currentPrice)
+            #if has_money!=False:
+            if self.commission_fee(currentPrice):
+                self.wallet=self.balance/currentPrice
+                self.balance=0
+                #print("BUY SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
     def sell(self,currentPrice):
         if self.wallet!=0:
-            self.balance=self.wallet*currentPrice
-            self.wallet=0
-            print("SELL SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+            if self.commission_fee(currentPrice):
+                self.balance=self.wallet*currentPrice
+                self.wallet=0
+                #print("SELL SIGNAL. ASSET: ", self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ", currentPrice)
+    def commission_fee(self,currentPrice):
+        fee=currentPrice*0.01
+        if self.balance>=fee:
+            self.balance-=fee
+            return True
+        else: return False
     def getBalance(self):
         return self.balance
     def getFlag(self): 

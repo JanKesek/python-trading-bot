@@ -144,7 +144,7 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 
 
 if __name__ == "__main__":
-	from rulebasedsystem import RBS
+	from rulebased.rulebasedsystem import RBS
 	#filename="LINK-BTCShort.json"
 	filename="BTC-USD.json"
 	jsonObj=readJSON(filename)
@@ -167,6 +167,6 @@ if __name__ == "__main__":
 	tester=Backtester(500, pricesBacktest)
 	for s in signals:
 		tester.simpleBacktest(s[0],s[1])
-	print("WALLET: {} BALANCE: {} WEALTH {}".format(tester.wallet,tester.balance, tester.getWealth()))
+	#print("WALLET: {} BALANCE: {} WEALTH {}".format(tester.wallet,tester.balance, tester.getWealth()))
 	#rbs.calculate_wbb()
 	#actualizeJSON(jsonObj,filename,symbol="BTC/USDT", timeframe='1h')
