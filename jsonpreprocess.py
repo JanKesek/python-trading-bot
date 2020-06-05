@@ -149,6 +149,7 @@ if __name__ == "__main__":
 	filename="BTC-USD.json"
 	jsonObj=readJSON(filename)
 	pricesBacktest=[obj['close'] for obj in jsonObj]
+	timestampsBacktest=[obj['open_time'] for obj in jsonObj]
 	#print(load_from_file())
 	rbs=RBS()
 	#rbs.calculate_rv(jsonObj)
@@ -158,15 +159,19 @@ if __name__ == "__main__":
 
 	#rbs.calculate_wbb()
 	rbs.load_from_file()
+	rbs.assert_new_data(pricesBacktest)
 	rbs.start()
 	rbs.find_in_groups("Plus_ETA_Big")
 	rbs.find_in_groups("Minus_ETA_Big")
 	rbs.find_in_groups("Plus_C_Big")
 	rbs.find_in_groups("Minus_C_Big")
 	signals=rbs.finaldecisions
-	tester=Backtester(500, pricesBacktest)
 	for s in signals:
-		tester.simpleBacktest(s[0],s[1])
-	#print("WALLET: {} BALANCE: {} WEALTH {}".format(tester.wallet,tester.balance, tester.getWealth()))
+		print("SIGNAL CREATED AT: {}".format(timestampsBacktest[s[1]]))
+	#tester=Backtester(2000, pricesBacktest, timestampsBacktest)
+	#for i in range(0,len(signals)):
+#		tester.simpleBacktest(signals[i][0],signals[i][1])
+#	print("WALLET: {} BALANCE: {} WEALTH {}".format(tester.wallet,tester.balance, tester.getWealth(-1)))
+#	tester.plotTradeHistory()
 	#rbs.calculate_wbb()
 	#actualizeJSON(jsonObj,filename,symbol="BTC/USDT", timeframe='1h')
