@@ -34,13 +34,44 @@ class SeaofBTCapp(tk.Tk):
             self.frames[F] = frame
 
             frame.grid(row=0, column=0, sticky="nsew")
+        tk.Label(self, text="ADD NEW PAIR").pack()
+        self.pair_entry = tk.Entry(self)
+        self.test_list = jp.fetch_tickers()
+        self.pair_entry.pack()
+        self.pair_entry.bind('<KeyRelease>', self.on_keyrelease)
+
+        self.listbox = tk.Listbox(self)
+        self.listbox.pack()
+        self.listbox.bind('<<ListboxSelect>>', self.on_select)
+        self.listbox_update(self.test_list)
 
         self.show_frame(StartPage)
-
-    def show_frame(self, cont, ):
-
+    def evaluate(self,event):
+        self.res.configure(text="DOWNLOADING PAIR: "+self.pair_entry.get())
+    def show_frame(self, cont ):
         frame = self.frames[cont]
         frame.tkraise()
+    def on_keyrelease(self,event):
+        value = event.widget.get()
+        value = value.strip().lower()
+        if value == '':
+            data = self.test_list
+        else:
+            data = []
+            for item in self.test_list:
+                if value in item.lower():
+                    data.append(item)                
+        self.listbox_update(data)
+    def listbox_update(self,data):
+        self.listbox.delete(0, 'end')
+        data = sorted(data, key=str.lower)
+        for item in data:
+            self.listbox.insert('end', item)
+    def on_select(self,event):
+        print(type(event.widget.get('active')))
+        #print('(event) previous:', event.widget.get('active'))
+        #print('(event)  current:', event.widget.get(event.widget.curselection()))
+        #print('---')
 
         
 class StartPage(tk.Frame):
@@ -63,8 +94,6 @@ class StartPage(tk.Frame):
 class PageOne(tk.Frame):
 
     def __init__(self, parent, controller):
-        #print(parent)
-        #print(controller)
         tk.Frame.__init__(self, parent)
         label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
         label.pack(pady=10,padx=10)
@@ -79,30 +108,10 @@ class PageOne(tk.Frame):
         button2 = tk.Button(self, text="Page Two",
                             command=lambda: controller.show_frame(PageTwo))
         button2.pack()
-        #fig = Figure(figsize=(5, 4), dpi=100)
         ts=jp.getDataFrameForTk(controller.plot)
-        #img_buffer = io.BytesIO()
-        #fig,ax=mpf.plot(ts, type='candle', savefig=dict(fname=img_buffer, dpi=192),closefig=False)
         fig,ax=mpf.plot(ts, type='candle',style='mike',volume=True, returnfig=True,closefig=False,
                         figratio=(10,4),figscale=0.5)
-        #canvas = FigureCanvasBase(fig)
-        #top=tk.Toplevel()
         canvas=FigureCanvasTkAgg(fig,self)
-        #chart_type.get_tk_widget().pack()
-        #chartLayout.addWidget(canvas)
-        #df = df[['First Column','Second Column']].groupby('First Column').sum()
-        #ts.plot(legend=True, ax=ax)
-        #ax.set_title('The Title for your chart')
-        #plt.close('all')
-        #img_buffer.seek(0)
-        #pil_image = Image.open(img_buffer)
-        #pil_image = pil_image.resize((self.root.winfo_width(), self.root.winfo_height() - (self.root.winfo_reqheight() - self.image_label.winfo_height())))
-        #pil_image = pil_image.resize((1340, 500))
-    
-        #self.image_reference = ImageTk.PhotoImage(pil_image)
-        #self.image_label.configure(image=self.image_reference)
-        #self.image_label.image = self.image_reference
-        
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 

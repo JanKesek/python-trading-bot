@@ -9,7 +9,10 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import ccxt
 import pprint
+import random
+import pickle
 from backtester import Backtester
+
 def toSupervised(data, lag=1):
 	columns = [data.shift(i) for i in range(1, lag+1)]
 	columns.append(data)
@@ -26,18 +29,28 @@ def checkDatetimeConsistency(jsonobj, index):
 			#index=index.delete(datetime.strprime(d,'%Y-%m-%d %I:%M:%S'))
 			index=index.delete(i)
 	return index
-def convertJSONToDataFrame(jsonobj,startD=datetime(2019,1,1), endD=datetime(2019,12,22), otherVariables=[]):
+def convertJSONToDataFrame(jsonobj, index,freq='1T', otherVariables=[]):
 	#ts=pd.DataFrame(index=pd.date_range(startD,endD))
-	index=pd.date_range(startD,endD, freq='1T')
+	#startD=datetime.strptime(jsonobj[0]['open_time'],'%Y-%m-%d %H:%M:%S')
+	#endD=datetime.strptime(jsonobj[-1]['open_time'],'%Y-%m-%d %H:%M:%S')
+	#index=pd.date_range(startD,endD, freq=freq)
 	ts=pd.DataFrame(index=index)
 	prices=[float(d['close']) for d in jsonobj]
+	highprices=[float(d['high']) for d in jsonobj]
+	lowprices=[float(d['low']) for d in jsonobj]
+	print("LEN CLOSE: {} LEN HIGH {} LEN LOW {}".format(len(prices),len(highprices),len(lowprices)))
 	#index=checkDatetimeConsistency(jsonobj, index)
 	#print("Object length: ", len(jsonobj),"Index: ", len(index), " Length: ", len(prices))
-	ts["close"]=prices
+	#ts["Open"]=[float(d['open'] for d in jsonobj)]
+	ts["High"]=highprices
+	ts["Open"]=lowprices
+	ts["Low"]=lowprices
+	ts["Close"]=prices
+	ts["Volume"]=[float(d['volume']) for d in jsonobj]
 	for v in otherVariables: ts[v]=[float(d[v]) for d in jsonobj]
 	#ts["DailyLow"]=[float(d["low"]) for d in jsonobj]
 	#ts["DailyHigh"]=[float(d["high"]) for d in jsonobj]
-	for i in range(0,5): ts["Lag{}".format(i+1)]=ts["close"].shift(i+1)
+	for i in range(0,5): ts["Lag{}".format(i+1)]=ts["Close"].shift(i+1)
 	return ts
 def getJSONObjectCP(symbol,startDate="2019-01-01",endDate="2020-01-09"):
 	r=requests.get("https://api.coinpaprika.com/v1/coins/"+symbol+"/ohlcv/historical?start="+startDate+"&end="+endDate)
@@ -141,33 +154,106 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 	with open(filename, 'w') as outfile:
 		json.dump(jsonObj, outfile)
 	return
-
-
+def calculateDatetimeIndex(jsonobj,freq='1H'):
+	startD=datetime.strptime(jsonobj[0]['open_time'],'%Y-%m-%d %H:%M:%S')
+	endD=datetime.strptime(jsonobj[-1]['open_time'],'%Y-%m-%d %H:%M:%S')
+	index=pd.date_range(startD,endD, freq=freq)
+	return index
+def indexCleaningRandom(obj,freq='1H'):
+	index=calculateDatetimeIndex(obj)
+	while len(obj)!=len(index):
+		obj.remove(obj[random.randint(0,len(obj))])
+	return index
+def indexCleaning(jsonobj, freq='1H'):
+	index=calculateDatetimeIndex(jsonobj)
+	times=[o['open_time'] for o in jsonobj]
+	timesindex=[str(time) for time in index]
+	print(timesindex[0:20])
+	print(times[0:20])
+	#for i in range(1,len(timesindex)):
+	#	timesindex[i]=timesindex[i][:-5]+'00'+timesindex[i][-3:]
+	print(len(times), len(timesindex))
+	#for time in times:
+#		if time not in timesindex:
+	#		print(time)
+	#nans=[time for time in timesindex if time not in times]
+	nans=[]
+	hoursonly=[d[:-6] for d in times]
+	for time in timesindex:
+		if time[:-6] not in hoursonly:
+			nans.append(time)
+	#timesindex = [time for time in timesindex if time not in nans]
+	while len(times)!=len(timesindex):
+		timesindex.remove(nans[-1])
+		nans=nans[:-1]
+	#print(nans)
+	print(len(times), len(timesindex))
+	datetimes=[datetime.strptime(t,'%Y-%m-%d %H:%M:%S') for t in timesindex]
+	return pd.Index(datetimes, dtype='datetime64[ns]')
+	#for i in range(10):
+	#		print(times[i]==timesindex[i])
+def simpleLinearInterpolation(obj):
+	i=0
+	while i<(len(obj))-1:
+		#print(obj[i+1].keys(),obj[i].keys())
+		tdelta=datetime.strptime(obj[i+1]['open_time'],'%Y-%m-%d %H:%M:%S')-datetime.strptime(obj[i]['open_time'],'%Y-%m-%d %H:%M:%S')
+		j=1
+		if tdelta.seconds>3600:
+			hours_missing=int(tdelta.seconds/60/60)
+			secs1=datetime.strptime(obj[i]['open_time'],'%Y-%m-%d %H:%M:%S')-datetime(1970,1,1)
+			secs2=datetime.strptime(obj[i+1]['open_time'],'%Y-%m-%d %H:%M:%S')-datetime(1970,1,1)
+			while j<hours_missing:
+				dic={}
+				for k in ['close','low','high','volume']:
+					dic[k]=float(obj[i][k])+((secs1.seconds+(3600*j))-secs1.seconds)/(secs2.seconds-secs1.seconds)*(float(obj[i+1][k])-float(obj[i][k]))
+				next_hour=datetime(1970,1,1)+(secs1+timedelta(hours=((3600*j)/60/60)))
+				dic['open_time']=datetime.strftime(next_hour,'%Y-%m-%d %H:%M:%S')
+				obj=obj[:i]+[dic]+obj[i:]
+				j+=1				
+			#print("{} : {}".format(obj[i]['open_time'],obj[i+1]['open_time']))
+			#print(str(i) + " : " + str(i+1))
+		i+=j
+	return obj
+def setDataFrameForTk(filename):
+	datafilename="data/"+filename
+	jsonObj=readJSON(datafilename)
+	ts=convertJSONToDataFrame(jsonObj,indexCleaning(jsonObj))
+	with open('data/df/'+filename+'df', 'wb') as dataframefile:
+		pickle.dump(ts, dataframefile)
+def getDataFrameForTk(filename):
+	with open(filename,'rb') as pfile:
+		ts=pickle.load(pfile)
+	return ts[-24:]
+def fetch_tickers(market='binance'):
+	market=getattr(ccxt, market)()
+	tickers=market.fetch_tickers()
+	return list(tickers.keys())
 if __name__ == "__main__":
-	from rulebased.rulebasedsystem import RBS
+	#from rulebased.rulebasedsystem import RBS
 	#filename="LINK-BTCShort.json"
 	filename="BTC-USD.json"
 	jsonObj=readJSON(filename)
-	pricesBacktest=[obj['close'] for obj in jsonObj]
-	timestampsBacktest=[obj['open_time'] for obj in jsonObj]
+	ts=convertJSONToDataFrame(jsonObj,indexCleaning(jsonObj))
+	#pricesBacktest=[obj['close'] for obj in jsonObj]
+	#timestampsBacktest=[obj['open_time'] for obj in jsonObj]
 	#print(load_from_file())
-	rbs=RBS()
+	#rbs=RBS()
 	#rbs.calculate_rv(jsonObj)
 	#rbs.calculate_volatilty()
 	#rbs.calculate_wbb()
 	#rbs.save_rbs_obj_to_json()
 
 	#rbs.calculate_wbb()
-	rbs.load_from_file()
-	rbs.assert_new_data(pricesBacktest)
-	rbs.start()
-	rbs.find_in_groups("Plus_ETA_Big")
-	rbs.find_in_groups("Minus_ETA_Big")
-	rbs.find_in_groups("Plus_C_Big")
-	rbs.find_in_groups("Minus_C_Big")
-	signals=rbs.finaldecisions
-	for s in signals:
-		print("SIGNAL CREATED AT: {}".format(timestampsBacktest[s[1]]))
+	#rbs.load_from_file()
+	#bs.assert_new_data(pricesBacktest)
+	#rbs.start()
+	#rbs.find_in_groups("Plus_ETA_Big")
+	#rbs.find_in_groups("Minus_ETA_Big")
+	#rbs.find_in_groups("Plus_C_Big")
+	#rbs.find_in_groups("Minus_C_Big")
+	#signals=rbs.finaldecisions
+	#for s in signals:
+#		print("SIGNAL CREATED AT: {}".format(timestampsBacktest[s[1]]))
 	#tester=Backtester(2000, pricesBacktest, timestampsBacktest)
 	#for i in range(0,len(signals)):
 #		tester.simpleBacktest(signals[i][0],signals[i][1])

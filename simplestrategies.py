@@ -3,6 +3,7 @@ import jsonpreprocess as jp
 from datetime import datetime
 import datetime as dt
 from sklearn import linear_model
+from statsmodels.tsa.arima_model import ARIMA
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -87,14 +88,45 @@ def strategy2(data,j,k,backtester):
             backtester.buyMeanReverse(data[i]['close'])
             if backtester.sellMeanReverseFlag==2:
                 backtester.sellMeanReverse(data[i]['close'])
-    
-
+def arimaForecast(ts):
+    X=ts['Close'].values
+    size=int(len(X)*0.66)
+    train,test=X[0:size],X[size:len(X)]
+    preds=[]
+    history=[x for x in train]
+    backtest=Backtester(500,ts['Close'].values,ts.index)
+    backtest.buy(train[-1],len(train)-1)
+    bought_at=train[-1]
+    sold_at=None
+    for i in range(len(test)):
+        model=ARIMA(history,order=(5,1,0))
+        fit=model.fit(disp=0)
+        out=fit.forecast()
+        if out[0]>=bought_at*1.18:
+            backtest.sell(test[i],len(train)+i)
+            sold_at=out[0]
+        if sold_at!=None:
+            if out[0]<=sold_at*0.82:
+                backtest.buy(test[i],len(train)+i)
+                bought_at=out[0]
+        if i%100==0:
+            print("WEALTH {} ".format(backtest.getWealth(len(train)+i)))
+        if backtest.getWealth(len(train)+i)<=53:
+            return
+        preds.append(out[0])
+        #history.append(out[0])
+        history.append(test[i])
+        print("PREDICTED {} EXPECTED {}".format(out[0],test[i]))
 
         
 if __name__ == "__main__":
-    filename="LINK-BTCShort.json"
+    filename="data/BTC-USD.json"
     data=jp.readJSON(filename)
-    strategy1(data)
+    data=jp.simpleLinearInterpolation(data)
+    ts=jp.indexCleaningRandom(data)
+    ts=jp.convertJSONToDataFrame(data,ts)
+    arimaForecast(ts)
+    #strategy1(data)
     #print(data[len(data)-1])
     #subdata=data[0:1000]
     #first=datetime.strptime(subdata[0]['open_time'],'%Y-%m-%d %I:%M:%S')
