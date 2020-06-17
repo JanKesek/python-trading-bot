@@ -11,6 +11,7 @@ import ccxt
 import pprint
 import random
 import pickle
+import os
 from backtester import Backtester
 
 def toSupervised(data, lag=1):
@@ -131,10 +132,18 @@ def readJSON(jsonFileName):
 		data = json.load(json_file)
 		for p in data: jsonObj.append(p)
 	return jsonObj
-def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
+def guiDownloadNewPair(symbol):
+	for tframe in ['1h','1d','1m']:
+		obj, filename=actualizeJSON(symbol=symbol,timeframe=tframe)
+		if len(obj)!=0: setDataFrameForTk(filename, obj)
+def actualizeJSON(jsonObj=None,symbol='LINK/BTC',timeframe='1m'):
 	binance=ccxt.binance()
 	currentTime=(datetime.now()-timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
-	since=jsonObj[-1]['open_time']
+	if jsonObj!=None:
+		since=jsonObj[-1]['open_time']
+	else:
+		since="2017-09-28 08:38:00"
+		jsonObj=[]
 	previousTime=since
 	while since[:-3]!=currentTime[:-3]:
 		since=since.replace(" ", "T")
@@ -151,18 +160,24 @@ def actualizeJSON(jsonObj,filename,symbol='LINK/BTC',timeframe='1m'):
 		print(currentTime[:-3], " : ", since[:-3])
 		if previousTime==since: break
 		else: previousTime=since
-	with open(filename, 'w') as outfile:
+	filename=symbol+'_'+timeframe+'.json'
+	filename=filename.replace('/','-')
+	with open('data/'+filename, 'w') as outfile:
 		json.dump(jsonObj, outfile)
-	return
+	return jsonObj, filename
 def calculateDatetimeIndex(jsonobj,freq='1H'):
 	startD=datetime.strptime(jsonobj[0]['open_time'],'%Y-%m-%d %H:%M:%S')
 	endD=datetime.strptime(jsonobj[-1]['open_time'],'%Y-%m-%d %H:%M:%S')
 	index=pd.date_range(startD,endD, freq=freq)
 	return index
 def indexCleaningRandom(obj,freq='1H'):
-	index=calculateDatetimeIndex(obj)
+	index=calculateDatetimeIndex(obj, freq=freq)
+	print("NUMBER OF TIME UNITS " , len(obj))
+	print("NUMBER OF INDEX UNITS ", len(index))
+	#print(index)
 	while len(obj)!=len(index):
-		obj.remove(obj[random.randint(0,len(obj))])
+		#print(len(obj))
+		obj.remove(obj[random.randint(0,len(obj)-1)])
 	return index
 def indexCleaning(jsonobj, freq='1H'):
 	index=calculateDatetimeIndex(jsonobj)
@@ -170,32 +185,21 @@ def indexCleaning(jsonobj, freq='1H'):
 	timesindex=[str(time) for time in index]
 	print(timesindex[0:20])
 	print(times[0:20])
-	#for i in range(1,len(timesindex)):
-	#	timesindex[i]=timesindex[i][:-5]+'00'+timesindex[i][-3:]
 	print(len(times), len(timesindex))
-	#for time in times:
-#		if time not in timesindex:
-	#		print(time)
-	#nans=[time for time in timesindex if time not in times]
 	nans=[]
 	hoursonly=[d[:-6] for d in times]
 	for time in timesindex:
 		if time[:-6] not in hoursonly:
 			nans.append(time)
-	#timesindex = [time for time in timesindex if time not in nans]
 	while len(times)!=len(timesindex):
 		timesindex.remove(nans[-1])
 		nans=nans[:-1]
-	#print(nans)
 	print(len(times), len(timesindex))
 	datetimes=[datetime.strptime(t,'%Y-%m-%d %H:%M:%S') for t in timesindex]
 	return pd.Index(datetimes, dtype='datetime64[ns]')
-	#for i in range(10):
-	#		print(times[i]==timesindex[i])
 def simpleLinearInterpolation(obj):
 	i=0
 	while i<(len(obj))-1:
-		#print(obj[i+1].keys(),obj[i].keys())
 		tdelta=datetime.strptime(obj[i+1]['open_time'],'%Y-%m-%d %H:%M:%S')-datetime.strptime(obj[i]['open_time'],'%Y-%m-%d %H:%M:%S')
 		j=1
 		if tdelta.seconds>3600:
@@ -210,15 +214,19 @@ def simpleLinearInterpolation(obj):
 				dic['open_time']=datetime.strftime(next_hour,'%Y-%m-%d %H:%M:%S')
 				obj=obj[:i]+[dic]+obj[i:]
 				j+=1				
-			#print("{} : {}".format(obj[i]['open_time'],obj[i+1]['open_time']))
-			#print(str(i) + " : " + str(i+1))
 		i+=j
 	return obj
-def setDataFrameForTk(filename):
+def setDataFrameForTk(filename,jsonObj=None):
 	datafilename="data/"+filename
-	jsonObj=readJSON(datafilename)
-	ts=convertJSONToDataFrame(jsonObj,indexCleaning(jsonObj))
-	with open('data/df/'+filename+'df', 'wb') as dataframefile:
+	if jsonObj==None:
+		jsonObj=readJSON(datafilename)
+	jsonObj=simpleLinearInterpolation(jsonObj)
+	dirname=filename.split('_')[0]
+	timeframe=filename.split("_")[1].split('.')[0]
+	ts=convertJSONToDataFrame(jsonObj,indexCleaningRandom(jsonObj,timeframe))
+	if not os.path.isdir('data/df/'+dirname):
+		os.makedirs('data/df/'+dirname)
+	with open('data/df/'+dirname+'/'+filename, 'wb') as dataframefile:
 		pickle.dump(ts, dataframefile)
 def getDataFrameForTk(filename):
 	with open(filename,'rb') as pfile:

@@ -47,7 +47,8 @@ class SeaofBTCapp(tk.Tk):
 
         self.show_frame(StartPage)
     def evaluate(self,event):
-        self.res.configure(text="DOWNLOADING PAIR: "+self.pair_entry.get())
+        jp.guiDownloadNewPair(self.pair_entry.get())
+        #self.res.configure(text="DOWNLOADING PAIR: "+self.pair_entry.get())
     def show_frame(self, cont ):
         frame = self.frames[cont]
         frame.tkraise()
@@ -69,6 +70,7 @@ class SeaofBTCapp(tk.Tk):
             self.listbox.insert('end', item)
     def on_select(self,event):
         print(type(event.widget.get('active')))
+        jp.guiDownloadNewPair(event.widget.get('active'))
         #print('(event) previous:', event.widget.get('active'))
         #print('(event)  current:', event.widget.get(event.widget.curselection()))
         #print('---')
