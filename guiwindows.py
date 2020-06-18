@@ -8,12 +8,12 @@ import numpy as np
 import os
 import jsonpreprocess as jp
 from guifetching import *
-
+from rulebased.simpleindicators import wbb_pandas
 
 LARGE_FONT= ("Verdana", 12)
 
 
-class SeaofBTCapp(tk.Tk):
+class Main(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         
@@ -52,6 +52,7 @@ class SeaofBTCapp(tk.Tk):
     def show_frame(self, cont,text=None ):
         if text!=None: self.text=text
         frame = self.frames[cont]
+        frame.event_generate("<<ShowFrame>>")
         frame.tkraise()
         #if self.text!=None: 
         #    return self.text
@@ -89,24 +90,27 @@ class StartPage(tk.Frame):
         lstOfMarkets=[x[0] for x in os.walk("data/df/")]
         lstOfMarkets=[x.split('/')[-1] for x in lstOfMarkets if x.split('/')[-1]!='']
         for f in lstOfMarkets:
-            controller.plot="data/df/"+f+"/"+f+"_1h.json"
+            plot="data/df/"+f+"/"+f+"_1h.json"
             #self.button = tk.Button(self, text=f.split(".")[0],
             #                command=lambda: controller.show_frame(PageOne))
             self.button = tk.Button(self, text=f.split(".")[0],
-                            command=lambda: controller.show_frame(PageOne))
+                            command=lambda plot=plot: controller.show_frame(PageOne,plot))
+            self.button.bind("<Key>", self.handle_keypress)
             #self.button.config(plot=controller.plot)                
             self.button.pack()
 
         #button2 = tk.Button(self, text="Visit Page 2",
         #                    command=lambda: controller.show_frame(PageTwo))
         #button2.pack()
-
+    def handle_keypress(self,event):
+        print(dir(event))
 class PageOne(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
         label.pack(pady=10,padx=10)
+        self.page_counter=0
         self.image_label = tk.Label()
         self.image_reference = None
         self.image_label.pack()
@@ -119,33 +123,54 @@ class PageOne(tk.Frame):
         button2 = tk.Button(self, text="Page Two",
                             command=lambda: controller.show_frame(PageTwo))
         button2.pack()
-        button2 = tk.Button(self, text="Refresh",
-                            command=lambda: self.on_show_frame(None))
-        button2.pack()
 
         print(dir(self.master))
+        self.bind("<<ShowFrame>>",lambda x: self.on_show_frame(None))
+        unit_data={'1h':'Hourly','1d':'Daily','1M':'Monthly'}
+        for unit in list(unit_data.keys()):           
+            button3=tk.Button(self,text=unit_data[unit]+" data", command= lambda x=unit:self.on_show_frame(None, unit=x))
+            button3.pack()
+    def delete_and_new(self,event):
+        self.toolbar.destroy()
         self.on_show_frame(None)
-        self.bind("<<ShowFrame>>",self.on_show_frame)
-    def on_show_frame(self,event):
-        print(self.x.button.config('text'))
-        #plot=controller.show_frame(PageOne)
-        #self.x.raise_frame(self)
-        plot=self.x.button.config('text')[-1]
-        print(plot)
-        plot="data/df/"+plot+"/"+plot+"_1h.json"
+    def on_show_frame(self,event, unit=None):
+        plot=self.controller.text
+        if unit!=None:
+            plot=plot.split('_')[0]+"_"+unit+".json"
         ts=getDataFrameForTk(plot)
-        fig,ax=mpf.plot(ts, type='candle',style='mike',volume=True, returnfig=True,closefig=False,
-                        figratio=(10,4),figscale=0.5)
-        canvas=FigureCanvasTkAgg(fig,self)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        if self.page_counter>0: 
+            self.canvas.get_tk_widget().pack_forget()
+            self.toolbar.destroy()
+        else:
+            self.button_bb = tk.Button(self, text="Bollinger Bands",
+                command=lambda x=ts: self.add_bb_indicator(None,plot=x))
+            self.button_bb.pack()
+        self.page_counter+=1
+        self.fig,self.ax=mpf.plot(ts, type='candle',style='mike',volume=True, returnfig=True,
+            closefig=False,figratio=(10,4),figscale=0.5)
 
-        toolbar = NavigationToolbar2Tk(canvas, self)
-        toolbar.update()
-    #def tkraise(self):
-        #print(self.x.button.text)
-     #   tk.Frame.tkraise(self)
 
+        self.update_canvas()
+        #self.button_bb.pack_forget()
+    def add_bb_indicator(self,event, plot=None):
+        self.canvas.get_tk_widget().pack_forget()
+        self.toolbar.destroy()
+        ts=plot
+        #ts=getDataFrameForTk(plot)
+        avg,lower,upper=wbb_pandas(ts,20,2)
+        add0=[mpf.make_addplot(upper['Close'],color='g'),mpf.make_addplot(lower['Close'],color='b')]
+        self.fig,self.ax=mpf.plot(ts, type='candle',style='mike',volume=True, returnfig=True,
+            closefig=False,figratio=(10,4),figscale=0.5,addplot=add0)
+        #self.button_bb.pack_forget()
+        self.update_canvas()
+
+    def update_canvas(self):
+        self.canvas=FigureCanvasTkAgg(self.fig,self)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self)
+        self.toolbar.update()
 
 class PageTwo(tk.Frame):
 
@@ -164,5 +189,5 @@ class PageTwo(tk.Frame):
         
 
 
-app = SeaofBTCapp()
+app = Main()
 app.mainloop()

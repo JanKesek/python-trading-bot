@@ -21,4 +21,4 @@ def setDataFrameForTk(filename,jsonObj=None):
 def getDataFrameForTk(filename):
 	with open(filename,'rb') as pfile:
 		ts=pickle.load(pfile)
-	return ts[-24:]
+	return ts[-30:]
