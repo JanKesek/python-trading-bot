@@ -3,12 +3,16 @@ import jsonpreprocess as jp
 from datetime import datetime
 import datetime as dt
 from sklearn import linear_model
+from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima_model import ARIMA
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from statistics import stdev
+from statistics import mean
 from backtester import Backtester
+import math
+from missingvalues import (simpleLinearInterpolation, indexCleaningRandom)
 class MAStrategy:
     def __init__(self, ts):
         self.ts=ts
@@ -90,7 +94,7 @@ def strategy2(data,j,k,backtester):
                 backtester.sellMeanReverse(data[i]['close'])
 def arimaForecast(ts):
     X=ts['Close'].values
-    size=int(len(X)*0.66)
+    size=int(len(X)*0.98)
     train,test=X[0:size],X[size:len(X)]
     preds=[]
     history=[x for x in train]
@@ -98,7 +102,24 @@ def arimaForecast(ts):
     backtest.buy(train[-1],len(train)-1)
     bought_at=train[-1]
     sold_at=None
-    for i in range(len(test)):
+    i=0
+    #print(history)
+    #print(test)
+    minGlobalDifference=math.inf
+    dailyforecast=[]
+    globaldiffs=[]
+    n_forecast=0
+    while i< len(test):
+        if i!=0 and i%24==0:
+            plt.delaxes()
+            plt.bar(np.arange(len(dailyforecast)),dailyforecast)
+            plt.savefig("testingarimaplots/error_histogram{}.png".format(n_forecast))
+            print("SUMMARY OF PERIOD MEAN OF DIFFERENCES: {}".format(mean(dailyforecast)))
+            if min(dailyforecast)<minGlobalDifference: minGlobalDifference=min(dailyforecast)
+            print("STARTING FORECASTING PERIOD (DAY AHEAD)")
+            history=history[0:-24]+[x for x in test[i-24:i]]
+            dailyforecast=[]
+            n_forecast+=1
         model=ARIMA(history,order=(5,1,0))
         fit=model.fit(disp=0)
         out=fit.forecast()
@@ -114,16 +135,22 @@ def arimaForecast(ts):
         if backtest.getWealth(len(train)+i)<=53:
             return
         preds.append(out[0])
-        #history.append(out[0])
+        diff=abs(preds[-1]-test[i])
+        dailyforecast.append(diff[0])
+        globaldiffs.append(diff[0])
+        #if diff>=150: history.append(test[i])
+        #else: history.append(preds[-1])
         history.append(test[i])
-        print("PREDICTED {} EXPECTED {}".format(out[0],test[i]))
-
-        
+        print("PREDICTED {} EXPECTED {} DIFFERENCE {}".
+                format(out[0],test[i], diff[0]))
+        i+=1
+    print("RMSE: {}, SMALLEST DIFF BETWEEN REAL AND PREDICTED {} MEAN OF ABSOLUTE DIFFERENCES {}".
+            format(mean_squared_error(test,preds),minGlobalDifference,mean(globaldiffs)))
 if __name__ == "__main__":
     filename="data/BTC-USD.json"
     data=jp.readJSON(filename)
-    data=jp.simpleLinearInterpolation(data)
-    ts=jp.indexCleaningRandom(data)
+    data=simpleLinearInterpolation(data)
+    ts=indexCleaningRandom(data)
     ts=jp.convertJSONToDataFrame(data,ts)
     arimaForecast(ts)
     #strategy1(data)
