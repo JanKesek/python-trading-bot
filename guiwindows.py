@@ -89,16 +89,22 @@ class StartPage(tk.Frame):
         label.pack(pady=10,padx=10)
         lstOfMarkets=[x[0] for x in os.walk("data/df/")]
         lstOfMarkets=[x.split('/')[-1] for x in lstOfMarkets if x.split('/')[-1]!='']
+        self.column_n=self.winfo_screenwidth()/3+40
+        #button_frame = tk.Frame(self.grid)
+        #button_frame.grid(row=1,column=3,columnspan=2)
+        #button_frame.pack(side="bottom", fill="x", expand=False)
+        #canvas.pack(side="top", fill="both", expand=True)
+
         for f in lstOfMarkets:
             plot="data/df/"+f+"/"+f+"_1h.json"
-            #self.button = tk.Button(self, text=f.split(".")[0],
-            #                command=lambda: controller.show_frame(PageOne))
             self.button = tk.Button(self, text=f.split(".")[0],
                             command=lambda plot=plot: controller.show_frame(PageOne,plot))
             self.button.bind("<Key>", self.handle_keypress)
-            #self.button.config(plot=controller.plot)                
-            self.button.pack()
-
+            #self.button.grid(row=0,column=column_n)
+            self.column_n+=100
+            self.button.place(x=self.column_n,y=0)
+            #self.button.pack()
+        #button_frame.grid_columnconfigure(0,weight=1)
         #button2 = tk.Button(self, text="Visit Page 2",
         #                    command=lambda: controller.show_frame(PageTwo))
         #button2.pack()
@@ -108,8 +114,8 @@ class PageOne(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
-        label.pack(pady=10,padx=10)
+        #label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
+        #label.pack(pady=10,padx=10)
         self.page_counter=0
         self.image_label = tk.Label()
         self.image_reference = None
@@ -120,16 +126,18 @@ class PageOne(tk.Frame):
                             command=lambda: controller.show_frame(StartPage))
         button1.pack()
 
-        button2 = tk.Button(self, text="Page Two",
-                            command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
+        #button2 = tk.Button(self, text="Page Two",
+        #                    command=lambda: controller.show_frame(PageTwo))
+        #button2.pack()
 
         print(dir(self.master))
         self.bind("<<ShowFrame>>",lambda x: self.on_show_frame(None))
         unit_data={'1h':'Hourly','1d':'Daily','1M':'Monthly'}
-        for unit in list(unit_data.keys()):           
+        column_n=self.winfo_screenwidth()/5
+        for unit in list(unit_data.keys()):     
             button3=tk.Button(self,text=unit_data[unit]+" data", command= lambda x=unit:self.on_show_frame(None, unit=x))
-            button3.pack()
+            button3.place(x=column_n,y=0)
+            column_n+=100
     def delete_and_new(self,event):
         self.toolbar.destroy()
         self.on_show_frame(None)
@@ -144,7 +152,7 @@ class PageOne(tk.Frame):
         else:
             self.button_bb = tk.Button(self, text="Bollinger Bands",
                 command=lambda x=ts: self.add_bb_indicator(None,plot=x))
-            self.button_bb.pack()
+            self.button_bb.place(x=self.winfo_screenwidth()*0.7,y=0)
         self.page_counter+=1
         self.fig,self.ax=mpf.plot(ts, type='candle',style='mike',volume=True, returnfig=True,
             closefig=False,figratio=(10,4),figscale=0.5)
@@ -155,11 +163,12 @@ class PageOne(tk.Frame):
     def add_bb_indicator(self,event, plot=None):
         self.canvas.get_tk_widget().pack_forget()
         self.toolbar.destroy()
-        ts=plot
+        
         #ts=getDataFrameForTk(plot)
-        avg,lower,upper=wbb_pandas(ts,20,2)
+        #ts=plot
+        avg,lower,upper=wbb_pandas(plot,20,2)
         add0=[mpf.make_addplot(upper['Close'],color='g'),mpf.make_addplot(lower['Close'],color='b')]
-        self.fig,self.ax=mpf.plot(ts, type='candle',style='mike',volume=True, returnfig=True,
+        self.fig,self.ax=mpf.plot(plot, type='candle',style='mike',volume=True, returnfig=True,
             closefig=False,figratio=(10,4),figscale=0.5,addplot=add0)
         #self.button_bb.pack_forget()
         self.update_canvas()
