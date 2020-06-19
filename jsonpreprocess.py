@@ -166,35 +166,6 @@ def fetch_tickers(market='binance'):
 	tickers=market.fetch_tickers()
 	return list(tickers.keys())
 if __name__ == "__main__":
-	#from rulebased.rulebasedsystem import RBS
-	#filename="LINK-BTCShort.json"
 	filename="BTC-USD.json"
 	jsonObj=readJSON(filename)
 	ts=convertJSONToDataFrame(jsonObj,indexCleaning(jsonObj))
-	#pricesBacktest=[obj['close'] for obj in jsonObj]
-	#timestampsBacktest=[obj['open_time'] for obj in jsonObj]
-	#print(load_from_file())
-	#rbs=RBS()
-	#rbs.calculate_rv(jsonObj)
-	#rbs.calculate_volatilty()
-	#rbs.calculate_wbb()
-	#rbs.save_rbs_obj_to_json()
-
-	#rbs.calculate_wbb()
-	#rbs.load_from_file()
-	#bs.assert_new_data(pricesBacktest)
-	#rbs.start()
-	#rbs.find_in_groups("Plus_ETA_Big")
-	#rbs.find_in_groups("Minus_ETA_Big")
-	#rbs.find_in_groups("Plus_C_Big")
-	#rbs.find_in_groups("Minus_C_Big")
-	#signals=rbs.finaldecisions
-	#for s in signals:
-#		print("SIGNAL CREATED AT: {}".format(timestampsBacktest[s[1]]))
-	#tester=Backtester(2000, pricesBacktest, timestampsBacktest)
-	#for i in range(0,len(signals)):
-#		tester.simpleBacktest(signals[i][0],signals[i][1])
-#	print("WALLET: {} BALANCE: {} WEALTH {}".format(tester.wallet,tester.balance, tester.getWealth(-1)))
-#	tester.plotTradeHistory()
-	#rbs.calculate_wbb()
-	#actualizeJSON(jsonObj,filename,symbol="BTC/USDT", timeframe='1h')
