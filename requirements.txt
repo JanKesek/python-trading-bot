@@ -1,0 +1,39 @@
+aiodns==1.1.1
+aiohttp==3.6.2
+async-timeout==3.0.1
+attrs==19.3.0
+brotlipy==0.7.0
+ccxt==1.30.48
+certifi==2020.6.20
+cffi==1.14.0
+chardet==3.0.4
+cryptography==2.9.2
+cycler==0.10.0
+idna==2.9
+joblib==0.15.1
+kiwisolver==1.2.0
+matplotlib @ file:///C:/ci/matplotlib-base_1592846084747/work
+mkl-fft==1.1.0
+mkl-random==1.1.1
+mkl-service==2.3.0
+mplfinance==0.12.6a3
+multidict==4.7.6
+numpy==1.18.5
+pandas @ file:///C:/ci/pandas_1592841747005/work
+pycares==3.1.1
+pycparser==2.20
+pyOpenSSL==19.1.0
+pyparsing==2.4.7
+PySocks==1.7.1
+python-dateutil==2.8.1
+pytz==2020.1
+requests @ file:///tmp/build/80754af9/requests_1592841827918/work
+scikit-learn @ file:///C:/ci/scikit-learn_1592847564598/work
+scipy @ file:///C:/ci/scipy_1592916958183/work
+six==1.15.0
+threadpoolctl @ file:///tmp/tmp9twdgx9k/threadpoolctl-2.1.0-py3-none-any.whl
+tornado==6.0.4
+urllib3==1.25.9
+win-inet-pton==1.1.0
+wincertstore==0.2
+yarl==1.1.0

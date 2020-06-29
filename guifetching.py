@@ -11,6 +11,7 @@ def guiDownloadNewPair(symbol):
 	for tframe in ['1h','1d','1M']:
 		obj, filename=actualizeJSON(symbol=symbol,timeframe=tframe)
 		setDataFrameForTk(filename, obj)
+	print("PAIR DOWNLOADED. RESET PROGRAM TO USE IT")
 def setDataFrameForTk(filename,jsonObj=None):
 	datafilename="data/"+filename
 	if jsonObj==None:
