@@ -69,11 +69,11 @@ class Backtester:
         fee=currentPrice*0.01
         #wealth=self.getWealth(index)
         if self.balance>=fee:
-            self.balance-=fee
+            #self.balance-=fee
             return True
         elif (self.wallet*currentPrice)>=fee:
             #wealth-=fee
-            self.wallet=(self.wallet*currentPrice-fee)/currentPrice
+            #self.wallet=(self.wallet*currentPrice-fee)/currentPrice
             return True
         else: return False
     def getBalance(self):

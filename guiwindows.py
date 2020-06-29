@@ -9,7 +9,7 @@ import os
 import jsonpreprocess as jp
 from guifetching import *
 from rulebased.simpleindicators import wbb_pandas
-
+from threading import Thread
 LARGE_FONT= ("Verdana", 12)
 
 
@@ -46,16 +46,11 @@ class Main(tk.Tk):
         self.listbox_update(self.test_list)
 
         self.show_frame(StartPage)
-    def evaluate(self,event):
-        guiDownloadNewPair(self.pair_entry.get())
-        #self.res.configure(text="DOWNLOADING PAIR: "+self.pair_entry.get())
     def show_frame(self, cont,text=None ):
         if text!=None: self.text=text
         frame = self.frames[cont]
         frame.event_generate("<<ShowFrame>>")
         frame.tkraise()
-        #if self.text!=None: 
-        #    return self.text
     def on_keyrelease(self,event):
         value = event.widget.get()
         value = value.strip().lower()
@@ -74,10 +69,8 @@ class Main(tk.Tk):
             self.listbox.insert('end', item)
     def on_select(self,event):
         print(type(event.widget.get('active')))
-        guiDownloadNewPair(event.widget.get('active'))
-        #print('(event) previous:', event.widget.get('active'))
-        #print('(event)  current:', event.widget.get(event.widget.curselection()))
-        #print('---')
+        runthread=Thread(target=lambda x=event.widget.get('active') : guiDownloadNewPair(x))
+        runthread.start()
     def get_page(self, page_class):
         return self.frames[page_class]
         
@@ -130,7 +123,6 @@ class PageOne(tk.Frame):
         #                    command=lambda: controller.show_frame(PageTwo))
         #button2.pack()
 
-        print(dir(self.master))
         self.bind("<<ShowFrame>>",lambda x: self.on_show_frame(None))
         unit_data={'1h':'Hourly','1d':'Daily','1M':'Monthly'}
         column_n=self.winfo_screenwidth()/5
@@ -163,9 +155,6 @@ class PageOne(tk.Frame):
     def add_bb_indicator(self,event, plot=None):
         self.canvas.get_tk_widget().pack_forget()
         self.toolbar.destroy()
-        
-        #ts=getDataFrameForTk(plot)
-        #ts=plot
         avg,lower,upper=wbb_pandas(plot,20,2)
         add0=[mpf.make_addplot(upper['Close'],color='g'),mpf.make_addplot(lower['Close'],color='b')]
         self.fig,self.ax=mpf.plot(plot, type='candle',style='mike',volume=True, returnfig=True,
