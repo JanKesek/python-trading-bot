@@ -132,7 +132,7 @@ def readJSON(jsonFileName):
 		data = json.load(json_file)
 		for p in data: jsonObj.append(p)
 	return jsonObj
-def actualizeJSON(jsonObj=None,symbol='LINK/BTC',timeframe='1m'):
+def actualizeJSON(jsonObj=None,symbol='LINK/BTC',timeframe='1m', gui=True):
 	binance=ccxt.binance()
 	currentTime=(datetime.now()-timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
 	if jsonObj!=None:
@@ -158,8 +158,9 @@ def actualizeJSON(jsonObj=None,symbol='LINK/BTC',timeframe='1m'):
 		else: previousTime=since
 	filename=symbol+'_'+timeframe+'.json'
 	filename=filename.replace('/','-')
-	with open('data/'+filename, 'w') as outfile:
-		json.dump(jsonObj, outfile)
+	if not gui:
+		with open('data/'+filename, 'w') as outfile:
+			json.dump(jsonObj, outfile)
 	return jsonObj, filename
 def fetch_tickers(market='binance'):
 	market=getattr(ccxt, market)()
