@@ -4,6 +4,10 @@ from missingvalues import (simpleLinearInterpolation,indexCleaningRandom)
 import os
 import json
 def guiDownloadNewPair(symbol):
+	if not os.path.isdir('data/'):
+		os.makedirs('data/')
+	if not os.path.isdir('data/df/'):
+		os.makedirs('data/df/')
 	for tframe in ['1h','1d','1M']:
 		obj, filename=actualizeJSON(symbol=symbol,timeframe=tframe)
 		setDataFrameForTk(filename, obj)
