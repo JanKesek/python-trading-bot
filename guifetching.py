@@ -3,7 +3,10 @@ from jsonpreprocess import (actualizeJSON, readJSON,convertJSONToDataFrame)
 from missingvalues import (simpleLinearInterpolation,indexCleaningRandom)
 import os
 import json
+import requests
+
 def guiDownloadNewPair(symbol):
+	print("DOWNLOADING SYMBOL: ",symbol)
 	if not os.path.isdir('data/'):
 		os.makedirs('data/')
 	if not os.path.isdir('data/df/'):
@@ -31,3 +34,28 @@ def getDataFrameForTk(filename):
 		jsonObj=json.load(jsonfile)
 	ts=convertJSONToDataFrame(jsonObj,indexCleaningRandom(jsonObj,timeframe))
 	return ts[-30:]
+def fetchall_api():
+	items_obj = requests.get("http://localhost:9095/user").json()
+	text = ""
+	for k in items_obj:
+		text += k['username'] + " "
+	return text
+def fetch_markets_bitbay():
+	markets = requests.get("https://api.bitbay.net/rest/trading/ticker")
+	return list(markets.json()['items'].keys())
+def buy_bitbay(amount,price, market):
+	print(amount,price)
+	if amount is None or price is None:
+		return
+	buy_object = {
+		'amount': amount,
+		'price': price,
+		'offerType':'BUY',
+		'rate':None,
+		'postOnly':False,
+		'mode':'market',
+		'fillOrKill':False
+	}
+	req = requests.post("http://localhost:9095/crypto/buy/{}".format(market),json=buy_object)
+	status = req.status_code
+	print(req.text)

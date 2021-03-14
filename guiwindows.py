@@ -27,7 +27,7 @@ class Main(tk.Tk):
 
         self.frames = {}
 
-        for F in (StartPage, PageOne, PageTwo):
+        for F in (StartPage, PageOne, PageTwo, PageThree):
 
             frame = F(container, self)
 
@@ -45,6 +45,8 @@ class Main(tk.Tk):
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
         self.listbox_update(self.test_list)
 
+        #self.outputField = tk.Label(self, text=fetchall_api())
+        #self.outputField.pack()
         self.show_frame(StartPage)
     def show_frame(self, cont,text=None ):
         if text!=None: self.text=text
@@ -101,6 +103,13 @@ class StartPage(tk.Frame):
         #button2 = tk.Button(self, text="Visit Page 2",
         #                    command=lambda: controller.show_frame(PageTwo))
         #button2.pack()
+
+        self.tradeButton = tk.Button(self, text="New BitBay trade",
+                            command=lambda : controller.show_frame(PageThree))
+        self.tradeButton.bind("<Key>", self.handle_keypress)
+            #self.button.grid(row=0,column=column_n)
+        self.tradeButton.place(x=self.winfo_screenwidth()/3+40,y=100)
+
     def handle_keypress(self,event):
         print(dir(event))
 class PageOne(tk.Frame):
@@ -184,8 +193,50 @@ class PageTwo(tk.Frame):
         button2 = tk.Button(self, text="Page One",
                             command=lambda: controller.show_frame(PageOne))
         button2.pack()
-        
-
-
+class PageThree(tk.Frame):
+    def __init__(self, parent, controller): 
+        tk.Frame.__init__(self, parent)
+        self.market = None
+        self.amount = 1
+        self.price = 50
+        self.market_list = fetch_markets_bitbay()
+        self.listbox = tk.Listbox(self)
+        self.listbox.pack()
+        self.listbox.bind('<<ListboxSelect>>', self.on_select)
+        self.listbox_update(self.market_list)
+        tk.Label(self,text=self.current_amount()).pack()
+        amount_btn = tk.Entry(self)
+        amount_btn.pack()
+        amount_btn.bind('<KeyRelease>', self.on_keyrelease_amount)
+        tk.Label(self,text=self.current_price()).pack()
+        price_btn = tk.Entry(self)
+        price_btn.pack()
+        price_btn.bind('<KeyRelease>', self.on_keyrelease_price)
+        self.buy_button = tk.Button(self,text="Kup", command=lambda: buy_bitbay(self.amount,self.price, self.market))
+        self.buy_button.place(x=self.winfo_screenwidth()/3+40,y=100)
+    def on_select(self,event):
+        print(type(event.widget.get('active')))
+        self.market = event.widget.get('active')
+    def listbox_update(self,data):
+        self.listbox.delete(0, 'end')
+        data = sorted(data, key=str.lower)
+        for item in data:
+            self.listbox.insert('end', item)
+    def current_amount(self):
+        market=""
+        if self.market is not None:
+            market = self.market.split("_")[0]
+        return "Ilość {} do kupienia".format(market)
+    def current_price(self):
+        market=""
+        if self.market is not None:
+            market = self.market.split("_")[1]
+        return "Za ile {} chce kupić".format(market)
+    def on_keyrelease_price(self,event):
+        self.price = event.widget.get()
+        print(self.price)
+    def on_keyrelease_amount(self,event):
+        self.amount =event.widget.get()
+        print(self.amount)
 app = Main()
 app.mainloop()
