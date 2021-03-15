@@ -21,7 +21,13 @@ def toSupervised(data, lag=1):
 	data.fillna(0, inplace=True)
 	return data.set_axis(["Volume", "Today","Lag1", "Lag2","Lag3","Lag4","Lag5","Direction1",
 				  "VolumeT","Tomorrow","Lag12", "Lag22","Lag32","Lag42","Lag52","Direction2"],axis=1, inplace=False)
-
+def getCurrencySymbols(market):
+	currs= market.currencies
+	symbols=[]
+	for curr in currs:
+		if 'name' in currs[curr]:
+			symbols.append(currs[curr]['name'])
+	return symbols
 def checkDatetimeConsistency(jsonobj, index):
 	dates=[d['open_time'] for d in jsonobj]
 	print(index)

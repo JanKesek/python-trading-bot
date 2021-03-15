@@ -93,12 +93,15 @@ def strategy2(data,j,k,backtester):
             if backtester.sellMeanReverseFlag==2:
                 backtester.sellMeanReverse(data[i]['close'])
 def arimaForecast(ts):
-    X=ts['Close'].values
-    size=int(len(X)*0.98)
+    #X=ts['Close'].values
+    X=ts['high'].values
+    #size=int(len(X)*0.98)
+    size=len(X)-100
     train,test=X[0:size],X[size:len(X)]
+    test_length=len(test)
     preds=[]
     history=[x for x in train]
-    backtest=Backtester(500,ts['Close'].values,ts.index)
+    backtest=Backtester(500,ts['high'].values,ts.index)
     backtest.buy(train[-1],len(train)-1)
     bought_at=train[-1]
     sold_at=None
@@ -110,6 +113,7 @@ def arimaForecast(ts):
     globaldiffs=[]
     n_forecast=0
     while i< len(test):
+        print(i," : ",test_length)
         if i!=0 and i%24==0:
             plt.delaxes()
             plt.bar(np.arange(len(dailyforecast)),dailyforecast)
@@ -120,7 +124,7 @@ def arimaForecast(ts):
             history=history[0:-24]+[x for x in test[i-24:i]]
             dailyforecast=[]
             n_forecast+=1
-        model=ARIMA(history,order=(5,1,0))
+        model=ARIMA(history,order=(3,1,4))
         fit=model.fit(disp=0)
         out=fit.forecast()
         if out[0]>=bought_at*1.18:
@@ -144,12 +148,17 @@ def arimaForecast(ts):
         print("PREDICTED {} EXPECTED {} DIFFERENCE {}".
                 format(out[0],test[i], diff[0]))
         i+=1
+    plt.plot(preds)
+    plt.plot(test)
+    plt.show()
     print("RMSE: {}, SMALLEST DIFF BETWEEN REAL AND PREDICTED {} MEAN OF ABSOLUTE DIFFERENCES {}".
             format(mean_squared_error(test,preds),minGlobalDifference,mean(globaldiffs)))
 if __name__ == "__main__":
-    filename="data/BTC-USD.json"
-    data=jp.readJSON(filename)
-    data=simpleLinearInterpolation(data)
-    ts=indexCleaningRandom(data)
-    ts=jp.convertJSONToDataFrame(data,ts)
+    #filename="data/BTC-USD.json"
+    filename="data/df/BTC-USDT/BTC-USDT_1h.json"
+    ts=pd.read_json(filename)
+    #data=jp.readJSON(filename)
+    #data=simpleLinearInterpolation(data)
+    #ts=indexCleaningRandom(data)
+    #ts=jp.convertJSONToDataFrame(data,ts)
     arimaForecast(ts)

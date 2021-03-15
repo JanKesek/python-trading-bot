@@ -10,8 +10,8 @@ class Adaptation:
         j=self.interval
         while j<=len(self.ts):
             currData=self.ts[j-self.interval:j]
-            if isStationary(currData):
-
+            #if isStationary(currData):
+                #strategy1(currData,)
 def isStationary(arr):
     adftest=adfuller(arr,autolag='AIC')
     return adftest[1]<0.05
