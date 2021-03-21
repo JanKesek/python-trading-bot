@@ -44,7 +44,7 @@ def fetch_markets_bitbay():
 	markets = requests.get("https://api.bitbay.net/rest/trading/ticker")
 	return list(markets.json()['items'].keys())
 def buy_bitbay(amount,price, market):
-	print(amount,price)
+	print(amount,price, market)
 	if amount is None or price is None:
 		return
 	buy_object = {
@@ -52,10 +52,10 @@ def buy_bitbay(amount,price, market):
 		'price': price,
 		'offerType':'BUY',
 		'rate':None,
-		'postOnly':False,
+		'postOnly':True,
 		'mode':'market',
 		'fillOrKill':False
 	}
 	req = requests.post("http://localhost:9095/crypto/buy/{}".format(market),json=buy_object)
 	status = req.status_code
-	print(req.text)
+	print(req.text, status)

@@ -1,5 +1,10 @@
 ccxtVenv/
-./microservice/src/main/resources/keys.json
+microservice2/src/main/resources/keys.json
+microservice2/target/
+microservice2/.editorconfig
+microservice2/doctor-blood.iml
+microservice2/src/test/resources/testkeys.json
+microservice2/.idea
 .vscode/
 Code.java
 Market-Currencies.json
