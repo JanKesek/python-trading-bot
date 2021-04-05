@@ -56,6 +56,12 @@ def buy_bitbay(amount,price, market):
 		'mode':'market',
 		'fillOrKill':False
 	}
+	print(buy_object)
 	req = requests.post("http://localhost:9095/crypto/buy/{}".format(market),json=buy_object)
 	status = req.status_code
 	print(req.text, status)
+def register_api_key(login, pubkey, privkey):
+	api_key_request = {'login':login,'publicKey':pubkey,'privateKey':privkey}
+	response = requests.post("http://localhost:9095/account/register",json=api_key_request)
+	status = response.status_code
+	print(response.text, status)

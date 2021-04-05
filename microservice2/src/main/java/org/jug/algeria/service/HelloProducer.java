@@ -10,11 +10,11 @@ import org.springframework.stereotype.Service;
 
 @Component
 public class HelloProducer  {
-	@Autowired
-	private KafkaTemplate<String,String> kafkaTemplate;
+	//@Autowired
+	////private KafkaTemplate<String,String> kafkaTemplate;
 
 	public void send(String msg) {
 		System.out.println("Sending message "+msg);
-		kafkaTemplate.send("testTopic",msg);
+		//kafkaTemplate.send("testTopic",msg);
 	}
 }

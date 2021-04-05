@@ -10,6 +10,7 @@ import jsonpreprocess as jp
 from guifetching import *
 from rulebased.simpleindicators import wbb_pandas
 from threading import Thread
+from guiregisterview import PageRegister
 LARGE_FONT= ("Verdana", 12)
 
 
@@ -27,7 +28,7 @@ class Main(tk.Tk):
 
         self.frames = {}
 
-        for F in (StartPage, PageOne, PageTwo, PageThree):
+        for F in (StartPage, PageOne, PageTwo, PageThree, PageRegister):
 
             frame = F(container, self)
 
@@ -109,6 +110,12 @@ class StartPage(tk.Frame):
         self.tradeButton.bind("<Key>", self.handle_keypress)
             #self.button.grid(row=0,column=column_n)
         self.tradeButton.place(x=self.winfo_screenwidth()/3+40,y=100)
+        
+        self.keyRegButton = tk.Button(self, text="Create new API key-pair",
+                            command=lambda : controller.show_frame(PageRegister))
+        self.keyRegButton.bind("<Key>", self.handle_keypress)
+            #self.button.grid(row=0,column=column_n)
+        self.keyRegButton.place(x=self.winfo_screenwidth()/3+160,y=100)
 
     def handle_keypress(self,event):
         print(dir(event))
@@ -204,6 +211,7 @@ class PageThree(tk.Frame):
         self.listbox.pack()
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
         self.listbox_update(self.market_list)
+        #self.listbox = add_scrollbar(self,self.listbox)
         tk.Label(self,text=self.current_amount()).pack()
         amount_btn = tk.Entry(self)
         amount_btn.pack()
@@ -238,5 +246,11 @@ class PageThree(tk.Frame):
     def on_keyrelease_amount(self,event):
         self.amount =event.widget.get()
         print(self.amount)
+def add_scrollbar(root,listbox):
+    scrollbar = tk.Scrollbar(root, orient="vertical")
+    scrollbar.config(command=listbox.yview)
+    scrollbar.pack(side="right")
+    listbox.config(yscrollcommand=scrollbar.set)
+    return listbox
 app = Main()
 app.mainloop()

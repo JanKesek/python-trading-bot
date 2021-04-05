@@ -36,6 +36,7 @@ public class CryptoController {
   public ResponseEntity<String> buy(@RequestBody BuyRequest request, @PathVariable String market) {
   		System.out.println(request.getAmount());
     	System.out.println(request.getPrice());
+
    	 	RestTemplate restTemplate = new RestTemplate();
     	String url = String.format("https://api.bitbay.net/rest/trading/offer/%s", market);
 // request body parameters
@@ -50,4 +51,5 @@ public class CryptoController {
     	System.out.println("ODPOWIEDZ: " + response.toString());
     	return response;
   }
+
 }
