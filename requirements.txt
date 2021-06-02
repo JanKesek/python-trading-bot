@@ -33,7 +33,7 @@ scipy @ file:///C:/ci/scipy_1592916958183/work
 six==1.15.0
 threadpoolctl @ file:///tmp/tmp9twdgx9k/threadpoolctl-2.1.0-py3-none-any.whl
 tornado==6.0.4
-urllib3==1.25.9
+urllib3==1.26.5
 win-inet-pton==1.1.0
 wincertstore==0.2
 yarl==1.1.0
