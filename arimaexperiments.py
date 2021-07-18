@@ -62,8 +62,9 @@ def covariance(ts,lag):
 if __name__ == "__main__":
     data=pandas.read_json("data/df/BTC-USDT/BTC-USDT_1h.json")
     ts=data['high'].values
-    estimateModel("data/df/BTC-USDT/predicted100values.npy",ts)
-    #print(estimateParameters(data['high']))
+    #modelvars = estimateModel("data/df/BTC-USDT/predicted100values.npy",ts)
+    #print(modelvars)
+    print(estimateParameters(data['high']))
     #print(data['high'].iloc[0])
     #corr=AR(data['high'])
     #print(corr)

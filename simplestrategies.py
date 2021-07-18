@@ -1,6 +1,6 @@
 from finta import TA
 import jsonpreprocess as jp
-from datetime import datetime
+from datetime import datetime, time
 import datetime as dt
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error
@@ -38,9 +38,17 @@ class MeanReversion:
         self.longCounter=0
         self.intervalLength=intervalLength
     def longLimit(self,t):
-        return self.ts[t]/(1+stdev(ts[t-self.intervalLength:t]))
+        ts = self.ts['close']
+        return ts[t-1]/(1+volatility_change(self.ts['low'][t-1],self.ts['high'][t-1]))
+        #return ts[t-1]/(1+stdev(ts))
     def shortLimit(self,t):
-        return self.ts[t]*(1+stdev(ts[t-self.intervalLength:t]))
+        ts = self.ts['close']
+        return ts[t-1]*(1+volatility_change(self.ts['low'][t-1],self.ts['high'][t-1]))
+        #return ts[t-1]*(1+stdev(ts))
+def volatility_change(low,high):
+    vol_change=((low + high)-(low+high))/2
+    return vol_change
+    
 def slopeOfTimeSeries(ama):
     #ama['date_ordinal']=pd.to_datetime(ama['open_time']).map(dt.datetime.toordinal)
     ama=ama.dropna()
@@ -50,8 +58,7 @@ def slopeOfTimeSeries(ama):
     return reg.coef_
 def SNRRatio(ama,ts,maobj):
     return slopeOfTimeSeries(ama)/stdev(maobj.MA())
-def strategy1(data, backtester):
-    l=0
+def strategy1(data, backtester,l):
     datalen=len(data)
     #initial balance: 0.087 is 470$ today
     #back=Backtester(0.087)
@@ -72,26 +79,38 @@ def strategy1(data, backtester):
             #snr=SNRRatio(kama,df,ma)
         #print("Signal To Noise: ",snr)
             currentPrice=df['close'][len(df)-1]
+            transactionTime = df['open_time'][len(df)-1]
+            print("CURR {} KAMA {}".format(currentPrice,kama))
             if (currentPrice<kama['close'][len(kama)-1]):
-                back.buy(currentPrice)
+                backtester.buy(currentPrice, time=transactionTime)
             if (currentPrice>kama['close'][len(kama)-1]):
-                back.sell(currentPrice)
+                backtester.sell(currentPrice, time=transactionTime)
         except ValueError as ve:
             print(ve)
         print("SIMULATION ORDER: ", l, " LENGTH: ", datalen)
         l+=mainterval
-    print(back.getBalance())
-def strategy2(data,j,k,backtester):
+    print(backtester.getBalance())
+    return l
+def strategy2(data,backtester,j):
     mr=MeanReversion(data, 500)
-    l=mr.longLimit(j)
-    s=mr.shortLimit(j)
-    for i in range(j,k):
-        if data[i]['close']>s:
-            backtester.sellMeanReverse(data[i]['close'])
-        if data[i]['close']<l:
-            backtester.buyMeanReverse(data[i]['close'])
+    l=mr.longLimit(len(data)+1)
+    s=mr.shortLimit(len(data)+1)
+    for i in range(j,len(data)):
+        currentPrice = data['close'][i]
+        transactionTime = data['open_time'][i]
+        #print("CURR {} L {} S {}".format(currentPrice,l,s))
+        if currentPrice>s:
+            backtester.sellMeanReverse(currentPrice,transactionTime=transactionTime)
+        elif currentPrice<l:
+            backtester.buyMeanReverse(currentPrice,transactionTime=transactionTime)
             if backtester.sellMeanReverseFlag==2:
-                backtester.sellMeanReverse(data[i]['close'])
+                backtester.sellMeanReverse(currentPrice, transactionTime=transactionTime)
+    return i
+#def volatility_change(low,high,arr):
+#    vol_change=[ ((low+high)-(low+high))/2 for i in range(1,len(arr)) ]
+#    return vol_change
+def findTrend(data,j):
+    pass
 def arimaForecast(ts):
     #X=ts['Close'].values
     X=ts['high'].values
