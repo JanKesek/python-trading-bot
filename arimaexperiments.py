@@ -64,7 +64,7 @@ if __name__ == "__main__":
     ts=data['high'].values
     #modelvars = estimateModel("data/df/BTC-USDT/predicted100values.npy",ts)
     #print(modelvars)
-    print(estimateParameters(data['high']))
+    print(estimateParameters(data['close'][:10000]))
     #print(data['high'].iloc[0])
     #corr=AR(data['high'])
     #print(corr)

@@ -119,7 +119,7 @@ class Backtester:
             print(type, " SIGNAL. ASSET: ",self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ",self.prices[index])
             print("AT : {}".format(self.timestamps[index]))
         else:
-            print(type, " SIGNAL. ASSET: ",self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ",price, " AT: ",time)
+            print(type, " SIGNAL. ASSET: ",self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ",price, " AT: ",time, " WALLET: ", self.wallet*price)
 
     def commission_fee(self,currentPrice):
         fee=currentPrice*0.01

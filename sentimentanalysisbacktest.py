@@ -10,6 +10,14 @@ def makeDecision(postsfromhour, current_hour, currency, backtester):
     else:
         signal="sell"
     backtester.simpleBacktestByPrice(signal,getSinglePriceByPostDateHour(current_hour,backtester.getPrices()))
+def backtest_btc(dicscores,dataprices,backtester : Backtester):
+    for hour in dicscores:
+        currentPrice = getSinglePriceByPostDateHour(dicscores[hour]['Bitcoin'][1],dataprices)
+        print(currentPrice)
+        if dicscores[hour]['Bitcoin'][0]>5:
+            backtester.buy(currentPrice=currentPrice)
+        elif dicscores[hour]['Bitcoin'][0]<(-5):
+            backtester.sell(currentPrice=currentPrice)
 if __name__=='__main__':
     data = pd.read_csv("sentiment.csv")
     dataprices = getOHLCVByFilename("BTC-USDT","1h")
@@ -26,13 +34,16 @@ if __name__=='__main__':
         if current_hour not in dicbyhour:
             dicbyhour[current_hour]={}
             for curr in currs:
-                dicbyhour[current_hour][curr]= 0
+                dicbyhour[current_hour][curr]= [0,current_hour]
         sentiment = row['prediction']
         if sentiment=='positive':
-            dicbyhour[current_hour][row['currency']]+=1
+            dicbyhour[current_hour][row['currency']][0]+=(row['number_of_posts'])
         elif sentiment=='negative':
-            dicbyhour[current_hour][row['currency']]-=1
-        if i%10==0:
-            for curr in currs:
-                makeDecision(dicbyhour[current_hour],current_hour,curr, backtester)
-    #print(dicbyhour)
+            dicbyhour[current_hour][row['currency']][0]-=(row['number_of_posts'])
+        print("CURRENCY {} SCORE {}".format(row['currency'],dicbyhour[current_hour][row['currency']]))
+        #if i%10==0:
+            #for curr in currs:
+                #makeDecision(dicbyhour[current_hour],current_hour,curr, backtester)
+    print(dicbyhour)
+    #print(dataprices)
+    backtest_btc(dicbyhour,dataprices,backtester)

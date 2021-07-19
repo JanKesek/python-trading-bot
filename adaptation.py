@@ -12,14 +12,14 @@ class Adaptation:
         while j<len(self.ts):
             currData=self.ts[j-self.interval:j]
             if isStationary(currData['close']):
-                print(j)
-                print(currData)
-                strategy1(currData,j-self.interval,backtester=backtester)
+                #print(j)
+                #print(currData)
+                strategy1(currData,backtester,j-1)
             else:
-                print(j)
-                print(currData)
-                strategy2(currData,backtester,j-self.interval)
-            j+=self.interval
+                #rint(j)
+                #print(currData)
+                strategy2(currData,backtester,j-1)
+            j+=1
 
 def isStationary(arr):
     adftest=adfuller(arr,autolag='AIC')
