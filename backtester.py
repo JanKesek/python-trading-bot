@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
+from numpy.lib.type_check import isreal
 import pandas as pd
 import json
-import requests 
+import requests
+from scipy.stats.stats import mode 
+from guifetching import buy_bitbay
 
 class HistoryOfTrades:
     def __init__(self) -> None:
@@ -17,7 +20,7 @@ class HistoryOfTrades:
             "sell":price
         })
 class Backtester:
-    def __init__(self, initialUSD,pricesData, timestampData):
+    def __init__(self, initialUSD,pricesData, timestampData,market=None,isRealEnv=False):
         self.prices=pricesData
         self.timestamps=timestampData
         self.initial=initialUSD
@@ -26,13 +29,23 @@ class Backtester:
         self.buyMeanReverseFlag=0
         self.sellMeanReverseFlag=0
         self.historyOfTrades=HistoryOfTrades()
-    def simpleBacktest(self,signal, index):
+        self.isRealEnv=isRealEnv
+        self.currentMarket=market
+    def setWallet(self,wallet : dict):
+        self.wallet = wallet
+    def simpleBacktest(self,signal, index,market):
         #print(signal)
         #print("CURRENT PRICE {}".format(self.prices[index]))
         if signal=='buy':
-            self.buy(self.prices[index],index)
+            if self.isRealEnv:
+                self.buyReal(self.prices[index],index=index,market=self.currentMarket)
+            else:
+                self.buy(self.prices[index],index)
         elif signal=='sell':
-            self.sell(self.prices[index],index)
+            if self.isRealEnv:
+                self.sellReal(self.prices[index],index=index,market=self.currentMarket)
+            else:
+                self.sell(self.prices[index],index)
     def simpleBacktestByPrice(self,signal, price):
         #print(signal)
         #print("CURRENT PRICE {}".format(self.prices[index]))
@@ -71,34 +84,60 @@ class Backtester:
         else:
             self.sellMeanReverseFlag=0
             self.sell(currentPrice,time=transactionTime)
-    def buy(self,currentPrice,index=None, time=None):
+    def buy(self,currentPrice,index=None, time=None, currency=None):
+        if self.isRealEnv:
+            self.buyReal(currentPrice,index=index,time=time,currency=currency,market=self.currentMarket)
+            self.historyOfTrades.appendBuy(currentPrice)
+            return
         if self.balance!=0:
             if self.commission_fee(currentPrice) and self.should(currentPrice,"buy"):
-                self.wallet=self.balance/currentPrice
+                if currency!=None:
+                    self.wallet[currency]=self.balance/currentPrice
+                else:
+                    self.wallet = self.balance/currentPrice
                 self.balance=0
                 if index == None:
-                    self.print_trade_details("BUY",index,price=currentPrice, time=time)
+                    self.print_trade_details("BUY",index,price=currentPrice, time=time,currency=currency)
                     #self.historyOfTrades.appendBuy(self.getWealth(0,price=currentPrice))
                     self.historyOfTrades.appendBuy(currentPrice)
                     #self.historyOfTrades.appendBuy(self.getWealth(index))
                 else:
-                    self.print_trade_details("BUY",index)
+                    self.print_trade_details("BUY",index,currency=currency)
                     self.historyOfTrades.appendBuy(self.getWealth(index))
 
                     #self.historyOfTrades.appendBuy(self.getWealth(index))
-    def sell(self,currentPrice,index=None, time=None):
-        if self.wallet!=0 and self.should(currentPrice,"sell"):
-            if self.commission_fee(currentPrice):
-                self.balance=self.wallet*currentPrice
-                self.wallet=0
+    def sell(self,currentPrice,index=None, time=None, currency=None):
+        if self.isRealEnv:
+            self.sellReal(currentPrice,index=index,time=time,currency=currency,market=self.currentMarket)
+            self.historyOfTrades.appendBuy(currentPrice)
+            return
+
+        walletVal = self.wallet
+        if currency!=None:
+            walletVal=self.wallet[currency]
+        print("D ",walletVal)
+        if walletVal!=0:
+            print("U")
+            if True:
+                if currency != None:
+                    self.balance=self.wallet[currency]*currentPrice
+                    self.wallet[currency]=0
+                else:
+                    self.balance=self.wallet*currentPrice
+                    self.wallet=0
                 if index != None:
-                    self.print_trade_details("SELL",index)
+                    self.print_trade_details("SELL",index,currency=currency)
                     self.historyOfTrades.appendSell(self.getWealth(index))
                 else:
-                    self.print_trade_details("SELL",index,price=currentPrice, time=time)
+                    self.print_trade_details("SELL",index,price=currentPrice, time=time, currency=currency)
                     #self.historyOfTrades.appendSell(self.getWealth(0,price=currentPrice))
                     self.historyOfTrades.appendSell(currentPrice)
-
+    def buyReal(self,currentPrice,index=None, time=None, currency=None,market=None):
+        print("EXECUTING REAL BUY ORDER")
+        buy_bitbay(self.balance*currentPrice,currentPrice,market,mode="BUY")
+    def sellReal(self,currentPrice,index=None, time=None, currency=None, market=None):
+        print("EXECUTING REAL SELL ORDER")
+        buy_bitbay(self.balance*currentPrice,currentPrice,market,mode="SELL")
     def should(self, currPrice, decision):
         i=len(self.historyOfTrades.history)-1
         while i>=0:
@@ -113,13 +152,17 @@ class Backtester:
                         return True
                     return False
             i-=1
+        print("P")
         return True
-    def print_trade_details(self,type,index, price=None, time=None):
+    def print_trade_details(self,type,index, price=None, time=None,currency=None):
+        walletVal=self.wallet
+        if currency!=None:
+            walletVal = self.wallet[currency]            
         if price == None:
-            print(type, " SIGNAL. ASSET: ",self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ",self.prices[index])
+            print(type, " SIGNAL. ASSET: ",walletVal, " BALANCE: ", self.balance, " CURRENTPRICE: ",self.prices[index])
             print("AT : {}".format(self.timestamps[index]))
         else:
-            print(type, " SIGNAL. ASSET: ",self.wallet, " BALANCE: ", self.balance, " CURRENTPRICE: ",price, " AT: ",time, " WALLET: ", self.wallet*price)
+            print(type, " SIGNAL. ASSET: ",walletVal, " BALANCE: ", self.balance, " CURRENTPRICE: ",price, " AT: ",time, " WALLET: ", walletVal*price)
 
     def commission_fee(self,currentPrice):
         fee=currentPrice*0.01
@@ -177,7 +220,7 @@ def getSinglePriceByPostDateHour(post_hour, data):
     hour = prepare_date_for_paprika_get(post_hour)
     hour = hour.replace("T"," ").replace("Z", " ")
     valueByHour = data[data['open_time']==hour]
-    print(valueByHour)
+    #print(valueByHour)
     return valueByHour.index[0]
 def prepare_date_for_paprika_get(d):
     d= d.replace(", ","T")

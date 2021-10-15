@@ -11,6 +11,8 @@ from guifetching import *
 from rulebased.simpleindicators import wbb_pandas
 from threading import Thread
 from guiregisterview import PageRegister
+from strategiesservice import use_strategy,getStrategies
+
 LARGE_FONT= ("Verdana", 12)
 
 
@@ -204,13 +206,20 @@ class PageThree(tk.Frame):
     def __init__(self, parent, controller): 
         tk.Frame.__init__(self, parent)
         self.market = None
+        self.strategy=None
         self.amount = 1
         self.price = 50
         self.market_list = fetch_markets_bitbay()
+        self.strategies = getStrategies()
+        self.strategyList =[s.getName() for s in self.strategies ]
         self.listbox = tk.Listbox(self)
         self.listbox.pack()
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
         self.listbox_update(self.market_list)
+        self.listboxStrategies = tk.Listbox(self)
+        self.listboxStrategies.pack()
+        self.listboxStrategies.bind('<<ListboxSelect>>', self.on_select_strategy)
+        self.listbox_strategies_update(self.strategyList)
         #self.listbox = add_scrollbar(self,self.listbox)
         tk.Label(self,text=self.current_amount()).pack()
         amount_btn = tk.Entry(self)
@@ -222,14 +231,28 @@ class PageThree(tk.Frame):
         price_btn.bind('<KeyRelease>', self.on_keyrelease_price)
         self.buy_button = tk.Button(self,text="Kup", command=lambda: buy_bitbay(self.amount,self.price, self.market))
         self.buy_button.place(x=self.winfo_screenwidth()/3+40,y=100)
+        self.backtest_button = tk.Button(self,text="Testuj strategie", command=lambda: use_strategy(self.market,self.strategy,False))
+        self.backtest_button.place(x=self.winfo_screenwidth()/3+80,y=100)
+        self.algotrade_button = tk.Button(self,text="Wykorzystaj strategie", command=lambda: use_strategy(self.market,self.strategy,True))
+        self.algotrade_button.place(x=self.winfo_screenwidth()/3+120,y=100)
     def on_select(self,event):
         print(type(event.widget.get('active')))
         self.market = event.widget.get('active')
+    def on_select_strategy(self,event):
+        strategyName = event.widget.get("active")
+        for s in self.strategies:
+            if s.getName()==strategyName:
+                print("WYBRANO: " + strategyName)
+                self.strategy=s
     def listbox_update(self,data):
         self.listbox.delete(0, 'end')
         data = sorted(data, key=str.lower)
         for item in data:
             self.listbox.insert('end', item)
+    def listbox_strategies_update(self,data):
+        self.listboxStrategies.delete(0, 'end')
+        for item in data:
+            self.listboxStrategies.insert('end', item)
     def current_amount(self):
         market=""
         if self.market is not None:
