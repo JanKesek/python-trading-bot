@@ -1,5 +1,5 @@
 import pickle
-import jsonpreprocess as jp
+from jsonpreprocess import actualizeJSON, readJSON, convertJSONToDataFrame
 from missingvalues import (simpleLinearInterpolation,indexCleaningRandom)
 import os
 import json
@@ -12,13 +12,13 @@ def guiDownloadNewPair(symbol):
 	if not os.path.isdir('data/df/'):
 		os.makedirs('data/df/')
 	for tframe in ['1h','1d','1M']:
-		obj, filename=jp.actualizeJSON(symbol=symbol,timeframe=tframe)
+		obj, filename = actualizeJSON(symbol=symbol,timeframe=tframe)
 		setDataFrameForTk(filename, obj)
 	print("PAIR DOWNLOADED. RESET PROGRAM TO USE IT")
 def setDataFrameForTk(filename,jsonObj=None):
 	datafilename="data/"+filename
 	if jsonObj==None:
-		jsonObj=jp.readJSON(datafilename)
+		jsonObj = readJSON(datafilename)
 	jsonObj=simpleLinearInterpolation(jsonObj)
 	dirname=filename.split('_')[0]
 	timeframe=filename.split("_")[1].split('.')[0]	
@@ -32,7 +32,7 @@ def getDataFrameForTk(filename):
 	timeframe=filename.split("_")[1].split('.')[0]
 	with open(filename,'r') as jsonfile:
 		jsonObj=json.load(jsonfile)
-	ts=jp.convertJSONToDataFrame(jsonObj,indexCleaningRandom(jsonObj,timeframe))
+	ts = convertJSONToDataFrame(jsonObj,indexCleaningRandom(jsonObj,timeframe))
 	return ts[-30:]
 def fetchall_api():
 	items_obj = requests.get("http://localhost:9095/user").json()

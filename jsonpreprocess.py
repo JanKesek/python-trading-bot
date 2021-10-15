@@ -12,7 +12,6 @@ import pprint
 import random
 import pickle
 import os
-from backtester import Backtester
 
 def toSupervised(data, lag=1):
 	columns = [data.shift(i) for i in range(1, lag+1)]

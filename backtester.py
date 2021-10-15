@@ -115,9 +115,7 @@ class Backtester:
         walletVal = self.wallet
         if currency!=None:
             walletVal=self.wallet[currency]
-        print("D ",walletVal)
         if walletVal!=0:
-            print("U")
             if True:
                 if currency != None:
                     self.balance=self.wallet[currency]*currentPrice
