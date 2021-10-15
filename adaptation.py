@@ -2,16 +2,21 @@ from statsmodels.tsa.stattools import adfuller
 from backtester import Backtester, getOHLCVByFilename, getOHLCVByFilenameJSON
 from simplestrategies import strategy1, strategy2
 class Adaptation:
-    def __init__(self,ts,backtester, market=None, interval=500):
+    def __init__(self,ts,backtester,index=None, market=None, interval=500):
         self.ts=ts
         self.interval=interval
         self.backtester= backtester
         self.market=market
+        self.index=index
+    def setIndex(self,index):
+        self.index=index
     def simulate(self):
         #backtester=Backtester(0.087)
         #backtester = Backtester(initialUSD=2000,pricesData=self.ts,timestampData=None)
         backtester = self.backtester
         j=self.interval
+        if self.index != None:
+            j=self.index-self.interval
         while j<len(self.ts):
             currData=self.ts[j-self.interval:j]
             if isStationary(currData['close']):
