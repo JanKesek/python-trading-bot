@@ -18,7 +18,7 @@ mkl-random==1.1.1
 mkl-service==2.3.0
 mplfinance==0.12.6a3
 multidict==4.7.6
-numpy==1.18.5
+numpy==1.22.0
 pandas @ file:///C:/ci/pandas_1592841747005/work
 pycares==3.1.1
 pycparser==2.20
