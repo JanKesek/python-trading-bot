@@ -10,7 +10,7 @@ chardet==3.0.4
 cryptography==2.9.2
 cycler==0.10.0
 idna==2.9
-joblib==0.15.1
+joblib==1.2.0
 kiwisolver==1.2.0
 matplotlib @ file:///C:/ci/matplotlib-base_1592846084747/work
 mkl-fft==1.1.0
